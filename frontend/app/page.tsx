@@ -16,12 +16,18 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [added, setAdded] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const fetchProducts = () => {
+    setLoading(true);
+    setError(false);
     api.get('/api/products')
       .then((r) => setProducts(r.data))
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchProducts(); }, []);
 
   const handleAdd = (product: Product) => {
     addToCart({ productId: product.id, productName: product.name, quantity: 1, unitPrice: product.price });
@@ -53,8 +59,21 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Error state */}
+      {!loading && error && (
+        <div className="text-center py-20 border border-dashed border-danger/30 rounded-xl bg-danger-light/30">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-foreground">Products temporarily unavailable</h2>
+          <p className="text-muted mt-2 max-w-md mx-auto">We&apos;re having trouble loading the product catalog. This is usually temporary.</p>
+          <button onClick={fetchProducts}
+            className="mt-6 bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Empty state */}
-      {!loading && products.length === 0 && (
+      {!loading && !error && products.length === 0 && (
         <div className="text-center py-20">
           <div className="text-6xl mb-4">🛍</div>
           <h2 className="text-xl font-semibold text-foreground">No products yet</h2>
@@ -63,7 +82,7 @@ export default function HomePage() {
       )}
 
       {/* Product grid */}
-      {!loading && products.length > 0 && (
+      {!loading && !error && products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
             <div key={product.id}

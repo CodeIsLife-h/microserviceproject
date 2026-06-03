@@ -23,12 +23,20 @@ export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchOrders = () => {
+    setLoading(true);
+    setError(false);
+    api.get('/api/orders/my')
+      .then((r) => setOrders(r.data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     if (!isAuthenticated()) { router.push('/login'); return; }
-    api.get('/api/orders/my')
-      .then((r) => setOrders(r.data))
-      .finally(() => setLoading(false));
+    fetchOrders();
   }, [router]);
 
   if (loading) {
@@ -47,6 +55,23 @@ export default function OrdersPage() {
               </div>
             </div>
           ))}
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="max-w-3xl mx-auto px-6 py-10">
+        <h1 className="text-3xl font-bold tracking-tight mb-8">My Orders</h1>
+        <div className="text-center py-20 border border-dashed border-danger/30 rounded-xl bg-danger-light/30">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-foreground">Orders temporarily unavailable</h2>
+          <p className="text-muted mt-2">We couldn&apos;t load your orders right now. Please try again shortly.</p>
+          <button onClick={fetchOrders}
+            className="mt-6 bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+            Try Again
+          </button>
         </div>
       </main>
     );

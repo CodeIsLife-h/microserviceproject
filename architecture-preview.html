@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E-Commerce Microservices — Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f0f17;
+    color: #cdd6f4;
+    padding: 40px 60px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  h1 span { color: #89b4fa; }
+  .subtitle {
+    color: #6c7086;
+    font-size: 15px;
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 48px 0 24px;
+    color: #cdd6f4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 22px;
+    background: #89b4fa;
+    border-radius: 2px;
+  }
+  .diagram-container {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+  .port-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+  }
+  .port-table th, .port-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #313244;
+    font-size: 14px;
+  }
+  .port-table th {
+    color: #6c7086;
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .port-table tr:hover td { background: #181825; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-blue { background: #1e1e2e; border: 1px solid #89b4fa; color: #89b4fa; }
+  .badge-green { background: #1e1e2e; border: 1px solid #a6e3a1; color: #a6e3a1; }
+  .badge-orange { background: #1e1e2e; border: 1px solid #fab387; color: #fab387; }
+  .badge-purple { background: #1e1e2e; border: 1px solid #cba6f7; color: #cba6f7; }
+  .badge-red { background: #1e1e2e; border: 1px solid #f38ba8; color: #f38ba8; }
+  .badge-yellow { background: #1e1e2e; border: 1px solid #f9e2af; color: #f9e2af; }
+</style>
+</head>
+<body>
+
+<h1>E-Commerce <span>Microservices</span></h1>
+<p class="subtitle">Architecture overview — Spring Boot, Next.js, RabbitMQ, Redis, PostgreSQL, Docker</p>
+
+<h2>System Overview</h2>
+<div class="diagram-container">
+<pre class="mermaid">
+graph TB
+    subgraph Client["&nbsp;&nbsp;Client&nbsp;&nbsp;"]
+        FE["🖥 Next.js Frontend\n:3000"]
+    end
+
+    subgraph Gateway["&nbsp;&nbsp;API Gateway&nbsp;&nbsp;"]
+        GW["🔀 Spring Cloud Gateway\n:8080"]
+        JWT{{"🔐 JWT Filter\nHMAC-SHA256"}}
+    end
+
+    subgraph Services["&nbsp;&nbsp;Application Services&nbsp;&nbsp;"]
+        AUTH["👤 Auth Service\n:8081"]
+        PROD["📦 Product Service\n:8084"]
+        ORD["🛒 Order Service\n:8082"]
+        NOTIF["📧 Notification Service\n:8083"]
+        MERCH["📊 Merchant Service\n:8085"]
+    end
+
+    subgraph Data["&nbsp;&nbsp;Data Layer&nbsp;&nbsp;"]
+        PG_AUTH[("authdb\n:5432")]
+        PG_PROD[("productdb\n:5434")]
+        PG_ORD[("orderdb\n:5433")]
+        PG_NOTIF[("notificationdb\n:5436")]
+        PG_MERCH[("merchantdb\n:5435")]
+        REDIS[("Redis Cache\n:6379")]
+    end
+
+    subgraph Async["&nbsp;&nbsp;Messaging & Email&nbsp;&nbsp;"]
+        RMQ["🐇 RabbitMQ\n:5672"]
+        MH["📬 Mailhog\nSMTP :1025 | UI :8025"]
+    end
+
+    FE -->|"REST / JSON"| GW
+    GW --> JWT
+    JWT -->|"/api/auth/**"| AUTH
+    JWT -->|"/api/products/**"| PROD
+    JWT -->|"/api/orders/**"| ORD
+    JWT -->|"/api/merchant/**"| MERCH
+
+    AUTH --> PG_AUTH
+    PROD --> PG_PROD
+    PROD --> REDIS
+    ORD --> PG_ORD
+    NOTIF --> PG_NOTIF
+    MERCH --> PG_MERCH
+
+    ORD -.->|"order.placed"| RMQ
+    RMQ -.->|"order.placed"| PROD
+    PROD -.->|"order.confirmed / failed"| RMQ
+    RMQ -.->|"status update"| ORD
+    RMQ -.->|"order.confirmed"| NOTIF
+    NOTIF -.->|"SMTP"| MH
+
+    MERCH ====>|"WebClient"| PROD
+    MERCH ====>|"WebClient"| ORD
+
+    style FE fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4,stroke-width:2px
+    style GW fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa,stroke-width:2px
+    style JWT fill:#313244,stroke:#f9e2af,color:#f9e2af,stroke-width:2px
+    style AUTH fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1,stroke-width:2px
+    style PROD fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1,stroke-width:2px
+    style ORD fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1,stroke-width:2px
+    style NOTIF fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1,stroke-width:2px
+    style MERCH fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1,stroke-width:2px
+    style PG_AUTH fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style PG_PROD fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style PG_ORD fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style PG_NOTIF fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style PG_MERCH fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style REDIS fill:#1e1e2e,stroke:#f38ba8,color:#f38ba8
+    style RMQ fill:#1e1e2e,stroke:#fab387,color:#fab387,stroke-width:2px
+    style MH fill:#1e1e2e,stroke:#cba6f7,color:#cba6f7
+</pre>
+</div>
+
+<h2>Async Order Saga</h2>
+<div class="diagram-container">
+<pre class="mermaid">
+sequenceDiagram
+    participant C as 🖥 Client
+    participant GW as 🔀 Gateway
+    participant OS as 🛒 Order Service
+    participant RMQ as 🐇 RabbitMQ
+    participant PS as 📦 Product Service
+    participant NS as 📧 Notification
+    participant MH as 📬 Mailhog
+
+    C->>GW: POST /api/orders
+    GW->>GW: Validate JWT
+    GW->>OS: Forward + X-User-Id header
+    OS->>OS: Save order (PENDING)
+    OS-->>C: 202 Accepted {orderId, status: PENDING}
+    OS-)RMQ: Publish order.placed
+
+    RMQ-)PS: Consume order.placed
+
+    alt ✅ Stock Available
+        PS->>PS: Atomic SQL decrement
+        PS-)RMQ: Publish order.confirmed
+        par Status Update
+            RMQ-)OS: Consume order.confirmed
+            OS->>OS: status = CONFIRMED
+        and Email
+            RMQ-)NS: Consume order.confirmed
+            NS->>MH: Send HTML email
+        end
+    else ❌ Insufficient Stock
+        PS-)RMQ: Publish order.failed
+        RMQ-)OS: Consume order.failed
+        OS->>OS: status = FAILED
+    end
+
+    C->>GW: GET /api/orders/{id}
+    GW->>OS: Forward
+    OS-->>C: {status: CONFIRMED | FAILED}
+</pre>
+</div>
+
+<h2>RabbitMQ Topology</h2>
+<div class="diagram-container">
+<pre class="mermaid">
+graph LR
+    OS["🛒 Order Service"] -->|"publish"| EX
+    PS_PUB["📦 Product Service"] -->|"publish"| EX
+
+    subgraph Exchange["&nbsp;&nbsp;ecommerce.events (topic)&nbsp;&nbsp;"]
+        EX((" "))
+    end
+
+    EX -->|"order.placed"| Q1["product.order.placed"]
+    EX -->|"order.confirmed"| Q2["order.status.confirmed"]
+    EX -->|"order.confirmed"| Q4["notification.order.confirmed"]
+    EX -->|"order.failed"| Q3["order.status.failed"]
+
+    Q1 --> PS["📦 Product Service"]
+    Q2 --> OS2["🛒 Order Service"]
+    Q3 --> OS3["🛒 Order Service"]
+    Q4 --> NS["📧 Notification Service"]
+
+    style EX fill:#313244,stroke:#fab387,color:#fab387
+    style Q1 fill:#1e1e2e,stroke:#89b4fa,color:#89b4fa
+    style Q2 fill:#1e1e2e,stroke:#a6e3a1,color:#a6e3a1
+    style Q3 fill:#1e1e2e,stroke:#f38ba8,color:#f38ba8
+    style Q4 fill:#1e1e2e,stroke:#cba6f7,color:#cba6f7
+</pre>
+</div>
+
+<h2>Port Map</h2>
+<div class="diagram-container" style="padding: 0;">
+<table class="port-table">
+  <thead>
+    <tr><th>Component</th><th>Port</th><th>Type</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>API Gateway</td><td>8080</td><td><span class="badge badge-blue">Gateway</span></td><td>JWT validation, routing, Swagger aggregation</td></tr>
+    <tr><td>Auth Service</td><td>8081</td><td><span class="badge badge-green">Service</span></td><td>Register, login, JWT issuance</td></tr>
+    <tr><td>Order Service</td><td>8082</td><td><span class="badge badge-green">Service</span></td><td>Order placement, status polling</td></tr>
+    <tr><td>Notification Service</td><td>8083</td><td><span class="badge badge-green">Service</span></td><td>Order confirmation emails</td></tr>
+    <tr><td>Product Service</td><td>8084</td><td><span class="badge badge-green">Service</span></td><td>Product catalog, stock management</td></tr>
+    <tr><td>Merchant Service</td><td>8085</td><td><span class="badge badge-green">Service</span></td><td>Sales dashboard, stock replenishment</td></tr>
+    <tr><td>Next.js Frontend</td><td>3000</td><td><span class="badge badge-blue">Frontend</span></td><td>Customer UI</td></tr>
+    <tr><td>PostgreSQL (auth)</td><td>5432</td><td><span class="badge badge-purple">Database</span></td><td>Users table</td></tr>
+    <tr><td>PostgreSQL (order)</td><td>5433</td><td><span class="badge badge-purple">Database</span></td><td>Orders, order items</td></tr>
+    <tr><td>PostgreSQL (product)</td><td>5434</td><td><span class="badge badge-purple">Database</span></td><td>Products catalog</td></tr>
+    <tr><td>PostgreSQL (merchant)</td><td>5435</td><td><span class="badge badge-purple">Database</span></td><td>Merchants</td></tr>
+    <tr><td>PostgreSQL (notification)</td><td>5436</td><td><span class="badge badge-purple">Database</span></td><td>Notification log</td></tr>
+    <tr><td>Redis</td><td>6379</td><td><span class="badge badge-red">Cache</span></td><td>Product catalog cache (TTL 5 min)</td></tr>
+    <tr><td>RabbitMQ</td><td>5672 / 15672</td><td><span class="badge badge-orange">Messaging</span></td><td>Async events / Management UI</td></tr>
+    <tr><td>Mailhog</td><td>1025 / 8025</td><td><span class="badge badge-yellow">Email</span></td><td>SMTP mock / Web UI</td></tr>
+  </tbody>
+</table>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#1e1e2e',
+      primaryColor: '#313244',
+      primaryTextColor: '#cdd6f4',
+      primaryBorderColor: '#89b4fa',
+      lineColor: '#585b70',
+      secondaryColor: '#313244',
+      tertiaryColor: '#181825',
+      noteBkgColor: '#313244',
+      noteTextColor: '#cdd6f4',
+      actorBkg: '#1e1e2e',
+      actorBorder: '#89b4fa',
+      actorTextColor: '#cdd6f4',
+      signalColor: '#cdd6f4',
+      labelBoxBkgColor: '#1e1e2e',
+      labelBoxBorderColor: '#585b70',
+      labelTextColor: '#cdd6f4',
+      loopTextColor: '#cdd6f4',
+      activationBorderColor: '#89b4fa',
+      activationBkgColor: '#313244',
+      sequenceNumberColor: '#1e1e2e',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    sequence: { mirrorActors: false, messageMargin: 40 }
+  });
+</script>
+</body>
+</html>

@@ -20,12 +20,21 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    api.get(`/api/products/${id}`).then((r) => setProduct(r.data));
-  }, [id]);
+  const fetchProduct = () => {
+    setLoading(true);
+    setError(false);
+    api.get(`/api/products/${id}`)
+      .then((r) => setProduct(r.data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  };
 
-  if (!product) {
+  useEffect(() => { fetchProduct(); }, [id]);
+
+  if (loading) {
     return (
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="animate-pulse">
@@ -39,6 +48,26 @@ export default function ProductDetailPage() {
               <div className="h-12 bg-surface rounded w-48 mt-6" />
             </div>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <main className="max-w-5xl mx-auto px-6 py-10">
+        <Link href="/" className="inline-flex items-center gap-1 text-muted hover:text-foreground text-sm font-medium mb-8 transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Back to products
+        </Link>
+        <div className="text-center py-20 border border-dashed border-danger/30 rounded-xl bg-danger-light/30">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-foreground">Product unavailable</h2>
+          <p className="text-muted mt-2">This product couldn&apos;t be loaded right now. Please try again shortly.</p>
+          <button onClick={fetchProduct}
+            className="mt-6 bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+            Try Again
+          </button>
         </div>
       </main>
     );
