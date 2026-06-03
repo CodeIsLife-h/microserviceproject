@@ -1,0 +1,102 @@
+version: '3.8'
+
+# Scoped docker-compose for feature/product branch
+# Tests: product CRUD, HTML descriptions, stock, cache, 401 enforcement
+# Run: docker-compose -f docker-compose.product.yml up --build
+
+networks:
+  ecommerce-net:
+    driver: bridge
+
+services:
+  postgres-auth:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-product:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: productdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8081:8081"
+    networks:
+      - ecommerce-net
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/authdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+  product-service:
+    build: ./product-service
+    ports:
+      - "8084:8084"
+    networks:
+      - ecommerce-net
+    depends_on:
+      postgres-product:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5434/productdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis
+      SPRING_RABBITMQ_HOST: localhost
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce-net
+    depends_on:
+      - auth-service
+      - product-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      ORDER_SERVICE_URL: http://localhost:8082
+      NOTIFICATION_SERVICE_URL: http://localhost:8083
+      MERCHANT_SERVICE_URL: http://localhost:8085
