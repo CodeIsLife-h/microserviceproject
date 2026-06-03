@@ -66,7 +66,7 @@ docker-compose up postgres-auth postgres-order postgres-product postgres-merchan
 JWT is signed with a hardcoded HMAC secret:
 
 ```
-ecommerce-jwt-secret-key-2026
+ecommerce-jwt-secret-key-2026-app
 ```
 
 This value is set in `api-gateway/src/main/resources/application.yml` and `auth-service/src/main/resources/application.yml`.

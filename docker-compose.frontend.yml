@@ -1,0 +1,152 @@
+version: '3.8'
+
+# Scoped docker-compose for feature/frontend branch
+# Tests: full customer flow end-to-end in browser (register, login, browse, cart, checkout, orders)
+# Run: docker-compose -f docker-compose.frontend.yml up --build
+
+networks:
+  ecommerce-net:
+    driver: bridge
+
+services:
+  postgres-auth:
+    image: postgres:16
+    environment: { POSTGRES_DB: authdb, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+    ports: ["5432:5432"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U postgres"], interval: 10s, timeout: 5s, retries: 5 }
+
+  postgres-order:
+    image: postgres:16
+    environment: { POSTGRES_DB: orderdb, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+    ports: ["5433:5432"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U postgres"], interval: 10s, timeout: 5s, retries: 5 }
+
+  postgres-product:
+    image: postgres:16
+    environment: { POSTGRES_DB: productdb, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+    ports: ["5434:5432"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U postgres"], interval: 10s, timeout: 5s, retries: 5 }
+
+  postgres-merchant:
+    image: postgres:16
+    environment: { POSTGRES_DB: merchantdb, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+    ports: ["5435:5432"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U postgres"], interval: 10s, timeout: 5s, retries: 5 }
+
+  postgres-notification:
+    image: postgres:16
+    environment: { POSTGRES_DB: notificationdb, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+    ports: ["5436:5432"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U postgres"], interval: 10s, timeout: 5s, retries: 5 }
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD","redis-cli","ping"], interval: 10s, timeout: 5s, retries: 5 }
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment: { RABBITMQ_DEFAULT_USER: guest, RABBITMQ_DEFAULT_PASS: guest }
+    ports: ["5672:5672", "15672:15672"]
+    networks: [ecommerce-net]
+    healthcheck: { test: ["CMD","rabbitmq-diagnostics","ping"], interval: 10s, timeout: 5s, retries: 5 }
+
+  mailhog:
+    image: mailhog/mailhog
+    ports: ["1025:1025", "8025:8025"]
+    networks: [ecommerce-net]
+
+  auth-service:
+    build: ./auth-service
+    ports: ["8081:8081"]
+    networks: [ecommerce-net]
+    depends_on: { postgres-auth: { condition: service_healthy } }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/authdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+  product-service:
+    build: ./product-service
+    ports: ["8084:8084"]
+    networks: [ecommerce-net]
+    depends_on:
+      postgres-product: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5432/productdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis
+      SPRING_RABBITMQ_HOST: rabbitmq
+
+  order-service:
+    build: ./order-service
+    ports: ["8082:8082"]
+    networks: [ecommerce-net]
+    depends_on:
+      postgres-order: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/orderdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+
+  notification-service:
+    build: ./notification-service
+    ports: ["8083:8083"]
+    networks: [ecommerce-net]
+    depends_on:
+      postgres-notification: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/notificationdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+
+  merchant-service:
+    build: ./merchant-service
+    ports: ["8085:8085"]
+    networks: [ecommerce-net]
+    depends_on:
+      postgres-merchant: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-merchant:5432/merchantdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      ORDER_SERVICE_URL: http://order-service:8082
+
+  api-gateway:
+    build: ./api-gateway
+    ports: ["8080:8080"]
+    networks: [ecommerce-net]
+    depends_on: [auth-service, product-service, order-service, notification-service, merchant-service]
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      ORDER_SERVICE_URL: http://order-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      MERCHANT_SERVICE_URL: http://merchant-service:8085
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://127.0.0.1:8080
+    ports: ["3000:3000"]
+    networks: [ecommerce-net]
+    depends_on: [api-gateway]
+    environment:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8080
