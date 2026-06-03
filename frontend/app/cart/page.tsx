@@ -18,35 +18,64 @@ export default function CartPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Your Cart</h1>
-        <Link href="/" className="text-blue-600 hover:underline text-sm">← Continue Shopping</Link>
+    <main className="max-w-3xl mx-auto px-6 py-10">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Your Cart</h1>
+          <p className="text-muted mt-1">{cart.length} {cart.length === 1 ? 'item' : 'items'}</p>
+        </div>
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-foreground transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Continue Shopping
+        </Link>
       </div>
 
       {cart.length === 0 ? (
-        <p className="text-gray-500">Your cart is empty.</p>
+        <div className="text-center py-20 border border-dashed border-border rounded-xl">
+          <div className="text-5xl mb-4">🛒</div>
+          <h2 className="text-lg font-semibold">Your cart is empty</h2>
+          <p className="text-muted mt-1">Add some products to get started.</p>
+          <Link href="/"
+            className="inline-block mt-6 bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+            Browse Products
+          </Link>
+        </div>
       ) : (
         <>
-          <div className="divide-y border rounded-lg overflow-hidden">
+          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
             {cart.map((item) => (
-              <div key={item.productId} className="flex justify-between items-center p-4">
-                <div>
-                  <p className="font-medium">{item.productName}</p>
-                  <p className="text-sm text-gray-500">Qty: {item.quantity} × ${item.unitPrice.toFixed(2)}</p>
+              <div key={item.productId} className="flex justify-between items-center p-5 hover:bg-surface/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-surface rounded-lg flex items-center justify-center text-xl">📦</div>
+                  <div>
+                    <p className="font-medium">{item.productName}</p>
+                    <p className="text-sm text-muted mt-0.5">
+                      {item.quantity} &times; ${item.unitPrice.toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-                <p className="font-semibold">${(item.quantity * item.unitPrice).toFixed(2)}</p>
+                <p className="font-semibold text-lg">${(item.quantity * item.unitPrice).toFixed(2)}</p>
               </div>
             ))}
           </div>
-          <div className="mt-4 flex justify-between items-center">
-            <p className="text-lg font-bold">Total: ${total.toFixed(2)}</p>
-            <div className="flex gap-3">
-              <button onClick={handleClear} className="text-red-500 hover:underline text-sm">Clear Cart</button>
-              <Link href="/checkout"
-                className="bg-blue-600 text-white rounded px-5 py-2 text-sm hover:bg-blue-700">
-                Checkout →
-              </Link>
+
+          <div className="mt-6 border border-border rounded-xl p-5 bg-surface/50">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-muted">Subtotal</p>
+                <p className="text-2xl font-bold mt-0.5">${total.toFixed(2)}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={handleClear}
+                  className="text-sm font-medium text-danger hover:text-danger/80 transition-colors px-4 py-2.5 rounded-lg border border-danger/20 hover:bg-danger-light">
+                  Clear Cart
+                </button>
+                <Link href="/checkout"
+                  className="bg-primary text-white rounded-lg px-6 py-2.5 text-sm font-medium hover:bg-primary-hover transition-colors inline-flex items-center gap-1">
+                  Checkout
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </Link>
+              </div>
             </div>
           </div>
         </>

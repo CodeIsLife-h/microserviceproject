@@ -15,9 +15,12 @@ interface Product {
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [added, setAdded] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/api/products').then((r) => setProducts(r.data));
+    api.get('/api/products')
+      .then((r) => setProducts(r.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleAdd = (product: Product) => {
@@ -27,44 +30,90 @@ export default function HomePage() {
   };
 
   return (
-    <main className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Products</h1>
-        <div className="flex gap-4">
-          <Link href="/cart" className="text-blue-600 hover:underline">Cart</Link>
-          <Link href="/orders" className="text-blue-600 hover:underline">My Orders</Link>
-          <Link href="/login" className="text-blue-600 hover:underline">Login</Link>
-        </div>
+    <main className="max-w-6xl mx-auto px-6 py-10">
+      {/* Hero */}
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold tracking-tight">Discover Products</h1>
+        <p className="text-muted mt-2 text-lg">Browse our curated collection of quality items.</p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <div key={product.id} className="border rounded-lg overflow-hidden shadow hover:shadow-md transition">
-            {product.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover" />
-            )}
-            <div className="p-4">
-              <h2 className="font-semibold text-lg">{product.name}</h2>
-              <p className="text-gray-600">${Number(product.price).toFixed(2)}</p>
-              <p className={`text-sm mt-1 ${product.stockCount > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {product.stockCount > 0 ? `${product.stockCount} in stock` : 'Out of stock'}
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Link href={`/products/${product.id}`}
-                  className="flex-1 text-center border border-blue-600 text-blue-600 rounded px-3 py-1 text-sm hover:bg-blue-50">
-                  View
-                </Link>
-                <button
-                  onClick={() => handleAdd(product)}
-                  disabled={product.stockCount === 0}
-                  className="flex-1 bg-blue-600 text-white rounded px-3 py-1 text-sm hover:bg-blue-700 disabled:opacity-50">
-                  {added === product.id ? 'Added!' : 'Add to Cart'}
-                </button>
+
+      {/* Loading state */}
+      {loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border border-border rounded-xl overflow-hidden animate-pulse">
+              <div className="w-full h-52 bg-surface" />
+              <div className="p-5 space-y-3">
+                <div className="h-5 bg-surface rounded w-3/4" />
+                <div className="h-4 bg-surface rounded w-1/4" />
+                <div className="h-9 bg-surface rounded" />
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && products.length === 0 && (
+        <div className="text-center py-20">
+          <div className="text-6xl mb-4">🛍</div>
+          <h2 className="text-xl font-semibold text-foreground">No products yet</h2>
+          <p className="text-muted mt-2">Check back soon for new arrivals.</p>
+        </div>
+      )}
+
+      {/* Product grid */}
+      {!loading && products.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <div key={product.id}
+              className="group border border-border rounded-xl overflow-hidden bg-background hover:shadow-lg hover:border-primary/20 transition-all duration-200">
+              <Link href={`/products/${product.id}`}>
+                {product.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={product.imageUrl} alt={product.name}
+                    className="w-full h-52 object-cover group-hover:scale-[1.02] transition-transform duration-200" />
+                ) : (
+                  <div className="w-full h-52 bg-surface flex items-center justify-center">
+                    <span className="text-4xl">📦</span>
+                  </div>
+                )}
+              </Link>
+              <div className="p-5">
+                <Link href={`/products/${product.id}`}>
+                  <h2 className="font-semibold text-lg group-hover:text-primary transition-colors">{product.name}</h2>
+                </Link>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xl font-bold text-foreground">${Number(product.price).toFixed(2)}</p>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                    product.stockCount > 0
+                      ? 'bg-success-light text-success'
+                      : 'bg-danger-light text-danger'
+                  }`}>
+                    {product.stockCount > 0 ? `${product.stockCount} in stock` : 'Out of stock'}
+                  </span>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Link href={`/products/${product.id}`}
+                    className="flex-1 text-center border border-border text-foreground rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface transition-colors">
+                    View Details
+                  </Link>
+                  <button
+                    onClick={() => handleAdd(product)}
+                    disabled={product.stockCount === 0}
+                    className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                      added === product.id
+                        ? 'bg-success text-white'
+                        : 'bg-primary text-white hover:bg-primary-hover'
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}>
+                    {added === product.id ? 'Added!' : 'Add to Cart'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
