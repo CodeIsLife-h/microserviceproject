@@ -1,5 +1,6 @@
 package com.ecommerce.gateway.filter;
 
+import com.ecommerce.gateway.config.GatewayProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -22,10 +23,12 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${gateway.public-paths}")
-    private List<String> publicPaths;
-
+    private final GatewayProperties gatewayProperties;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    public JwtAuthFilter(GatewayProperties gatewayProperties) {
+        this.gatewayProperties = gatewayProperties;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -64,7 +67,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicPath(String path) {
-        return publicPaths.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        return gatewayProperties.getPublicPaths().stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     @Override
