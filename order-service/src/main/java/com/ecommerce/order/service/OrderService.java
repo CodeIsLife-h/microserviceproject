@@ -89,6 +89,12 @@ public class OrderService {
                 .toList();
     }
 
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(OrderResponse::from)
+                .toList();
+    }
+
     public OrderResponse getOrderById(Long id) {
         return orderRepository.findById(id)
                 .map(OrderResponse::from)

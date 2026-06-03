@@ -40,6 +40,12 @@ public class OrderController {
         return orderService.getOrdersByCustomer(Long.parseLong(userId));
     }
 
+    @GetMapping("/all")
+    @Operation(summary = "Get all orders — used by Merchant Service")
+    public List<OrderResponse> getAllOrders() {
+        return orderService.getAllOrders();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get order by ID — poll this to check PENDING → CONFIRMED/FAILED")
     public ResponseEntity<?> getOrder(@PathVariable Long id) {
