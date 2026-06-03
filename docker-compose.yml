@@ -171,7 +171,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5433/orderdb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/orderdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -188,7 +188,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5436/notificationdb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/notificationdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -209,7 +209,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5434/productdb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5432/productdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_REDIS_HOST: redis
@@ -225,7 +225,7 @@ services:
       postgres-merchant:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-merchant:5435/merchantdb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-merchant:5432/merchantdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       PRODUCT_SERVICE_URL: http://product-service:8084
