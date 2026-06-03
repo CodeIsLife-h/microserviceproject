@@ -1,0 +1,104 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**
+
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/products/**
+
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/orders/**
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/notifications/**
+
+        - id: merchant-service
+          uri: ${MERCHANT_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/merchant/**
+
+        # Swagger aggregation routes — expose each service's api-docs through gateway
+        - id: auth-service-docs
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/auth-docs/**
+          filters:
+            - RewritePath=/auth-docs/(?<remaining>.*), /${remaining}
+
+        - id: product-service-docs
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/product-docs/**
+          filters:
+            - RewritePath=/product-docs/(?<remaining>.*), /${remaining}
+
+        - id: order-service-docs
+          uri: ${ORDER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/order-docs/**
+          filters:
+            - RewritePath=/order-docs/(?<remaining>.*), /${remaining}
+
+        - id: notification-service-docs
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/notification-docs/**
+          filters:
+            - RewritePath=/notification-docs/(?<remaining>.*), /${remaining}
+
+        - id: merchant-service-docs
+          uri: ${MERCHANT_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/merchant-docs/**
+          filters:
+            - RewritePath=/merchant-docs/(?<remaining>.*), /${remaining}
+
+jwt:
+  secret: ecommerce-jwt-secret-key-2026
+
+# Public paths that bypass JWT filter
+gateway:
+  public-paths:
+    - /api/auth/**
+    - /api/products
+    - /api/products/**
+    - /swagger-ui/**
+    - /swagger-ui.html
+    - /v3/api-docs/**
+    - /webjars/**
+    - /auth-docs/**
+    - /product-docs/**
+    - /order-docs/**
+    - /notification-docs/**
+    - /merchant-docs/**
+    - /actuator/**
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Auth Service
+        url: /auth-docs/v3/api-docs
+      - name: Product Service
+        url: /product-docs/v3/api-docs
+      - name: Order Service
+        url: /order-docs/v3/api-docs
+      - name: Notification Service
+        url: /notification-docs/v3/api-docs
+      - name: Merchant Service
+        url: /merchant-docs/v3/api-docs
