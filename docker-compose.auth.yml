@@ -1,0 +1,55 @@
+version: '3.8'
+
+# Scoped docker-compose for feature/auth branch
+# Tests: register, login, JWT issuance, 401 enforcement at gateway
+# Run: docker-compose -f docker-compose.auth.yml up --build
+
+networks:
+  ecommerce-net:
+    driver: bridge
+
+services:
+  postgres-auth:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8081:8081"
+    networks:
+      - ecommerce-net
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/authdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce-net
+    depends_on:
+      - auth-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PRODUCT_SERVICE_URL: http://localhost:8084
+      ORDER_SERVICE_URL: http://localhost:8082
+      NOTIFICATION_SERVICE_URL: http://localhost:8083
+      MERCHANT_SERVICE_URL: http://localhost:8085

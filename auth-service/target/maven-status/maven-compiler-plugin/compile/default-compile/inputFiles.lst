@@ -1,0 +1,10 @@
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\AuthApplication.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\config\SecurityConfig.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\controller\AuthController.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\dto\AuthResponse.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\dto\LoginRequest.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\dto\RegisterRequest.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\entity\User.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\repository\UserRepository.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\service\AuthService.java
+C:\GitHub\Microservices Project\auth-service\src\main\java\com\ecommerce\auth\util\JwtUtil.java
