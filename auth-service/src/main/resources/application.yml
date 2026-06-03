@@ -18,7 +18,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: ecommerce-jwt-secret-key-2026
+  secret: ecommerce-jwt-secret-key-2026-app
   expiration: 86400000
 
 springdoc:

@@ -69,7 +69,7 @@ spring:
             - RewritePath=/merchant-docs/(?<remaining>.*), /${remaining}
 
 jwt:
-  secret: ecommerce-jwt-secret-key-2026
+  secret: ecommerce-jwt-secret-key-2026-app
 
 # Public paths that bypass JWT filter
 gateway:

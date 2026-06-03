@@ -10,5 +10,5 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: ecommerce-jwt-secret-key-2026
+  secret: ecommerce-jwt-secret-key-2026-app
   expiration: 86400000
