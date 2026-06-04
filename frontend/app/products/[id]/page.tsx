@@ -22,13 +22,26 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [stale, setStale] = useState(false);
 
   const fetchProduct = () => {
     setLoading(true);
     setError(false);
+    setStale(false);
     api.get(`/api/products/${id}`)
-      .then((r) => setProduct(r.data))
-      .catch(() => setError(true))
+      .then((r) => {
+        setProduct(r.data);
+        localStorage.setItem(`cached_product_${id}`, JSON.stringify(r.data));
+      })
+      .catch(() => {
+        const cached = localStorage.getItem(`cached_product_${id}`);
+        if (cached) {
+          setProduct(JSON.parse(cached));
+          setStale(true);
+        } else {
+          setError(true);
+        }
+      })
       .finally(() => setLoading(false));
   };
 
@@ -85,6 +98,20 @@ export default function ProductDetailPage() {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         Back to products
       </Link>
+
+      {stale && (
+        <div className="mb-6 flex items-center gap-3 border border-warning/30 bg-warning-light/30 rounded-xl px-5 py-3">
+          <span className="text-xl">📡</span>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Showing cached data</p>
+            <p className="text-xs text-muted">Product service is unavailable — price and stock may be outdated.</p>
+          </div>
+          <button onClick={fetchProduct}
+            className="text-xs font-medium text-primary hover:text-primary-hover transition-colors">
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row gap-10">
         {product.imageUrl ? (

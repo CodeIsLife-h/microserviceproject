@@ -9,6 +9,8 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 3000
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,6 +22,9 @@ spring:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
       port: 6379
+      timeout: 2s
+      lettuce:
+        shutdown-timeout: 100ms
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: 5672

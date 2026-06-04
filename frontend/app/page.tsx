@@ -17,13 +17,26 @@ export default function HomePage() {
   const [added, setAdded] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [stale, setStale] = useState(false);
 
   const fetchProducts = () => {
     setLoading(true);
     setError(false);
+    setStale(false);
     api.get('/api/products')
-      .then((r) => setProducts(r.data))
-      .catch(() => setError(true))
+      .then((r) => {
+        setProducts(r.data);
+        localStorage.setItem('cached_products', JSON.stringify(r.data));
+      })
+      .catch(() => {
+        const cached = localStorage.getItem('cached_products');
+        if (cached) {
+          setProducts(JSON.parse(cached));
+          setStale(true);
+        } else {
+          setError(true);
+        }
+      })
       .finally(() => setLoading(false));
   };
 
@@ -78,6 +91,21 @@ export default function HomePage() {
           <div className="text-6xl mb-4">🛍</div>
           <h2 className="text-xl font-semibold text-foreground">No products yet</h2>
           <p className="text-muted mt-2">Check back soon for new arrivals.</p>
+        </div>
+      )}
+
+      {/* Stale data banner */}
+      {stale && (
+        <div className="mb-6 flex items-center gap-3 border border-warning/30 bg-warning-light/30 rounded-xl px-5 py-3">
+          <span className="text-xl">📡</span>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Showing cached data</p>
+            <p className="text-xs text-muted">Product service is unavailable — prices and stock may be outdated.</p>
+          </div>
+          <button onClick={fetchProducts}
+            className="text-xs font-medium text-primary hover:text-primary-hover transition-colors">
+            Retry
+          </button>
         </div>
       )}
 
