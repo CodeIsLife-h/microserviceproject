@@ -47,7 +47,7 @@ class ProductServiceTest {
     private Product sampleProduct() {
         Product p = new Product();
         p.setName("Test Product");
-        p.setDescriptionHtml("<p>Description</p>");
+        p.setDescription("A plain text description");
         p.setPrice(new BigDecimal("29.99"));
         p.setImageUrl("http://example.com/img.jpg");
         p.setStockCount(10);
@@ -60,7 +60,7 @@ class ProductServiceTest {
         when(productRepository.save(any())).thenReturn(saved);
 
         ProductResponse result = productService.createProduct(
-                new ProductRequest("Test Product", "<p>Description</p>", new BigDecimal("29.99"), "http://example.com/img.jpg", 10)
+                new ProductRequest("Test Product", "A plain text description", new BigDecimal("29.99"), "http://example.com/img.jpg", 10)
         );
 
         assertThat(result.name()).isEqualTo("Test Product");
@@ -134,7 +134,7 @@ class ProductServiceTest {
         // Simulate a cached product as a Map (how GenericJackson2JsonRedisSerializer stores it)
         java.util.Map<String, Object> cachedMap = java.util.Map.of(
                 "id", 1, "name", "Cached Widget", "price", 19.99,
-                "stockCount", 5, "imageUrl", "", "descriptionHtml", ""
+                "stockCount", 5, "imageUrl", "", "description", ""
         );
         when(valueOperations.get("product:1")).thenReturn(cachedMap);
 
@@ -159,9 +159,9 @@ class ProductServiceTest {
         when(redisTemplate.keys("product:*")).thenReturn(Set.of("product:1", "product:2"));
 
         java.util.Map<String, Object> cached1 = java.util.Map.of(
-                "id", 1, "name", "Widget A", "price", 10.0, "stockCount", 3, "imageUrl", "", "descriptionHtml", "");
+                "id", 1, "name", "Widget A", "price", 10.0, "stockCount", 3, "imageUrl", "", "description", "");
         java.util.Map<String, Object> cached2 = java.util.Map.of(
-                "id", 2, "name", "Widget B", "price", 20.0, "stockCount", 7, "imageUrl", "", "descriptionHtml", "");
+                "id", 2, "name", "Widget B", "price", 20.0, "stockCount", 7, "imageUrl", "", "description", "");
         when(valueOperations.get("product:1")).thenReturn(cached1);
         when(valueOperations.get("product:2")).thenReturn(cached2);
 

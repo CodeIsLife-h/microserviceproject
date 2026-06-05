@@ -31,7 +31,7 @@ class ProductControllerTest {
     @MockBean ProductService productService;
 
     private ProductResponse sampleResponse() {
-        return new ProductResponse(1L, "Test Product", "<p>Description</p>",
+        return new ProductResponse(1L, "Test Product", "A plain text description",
                 new BigDecimal("29.99"), "http://img.url", 10, LocalDateTime.now());
     }
 
@@ -51,7 +51,7 @@ class ProductControllerTest {
 
         mockMvc.perform(get("/api/products/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.descriptionHtml").value("<p>Description</p>"));
+                .andExpect(jsonPath("$.description").value("A plain text description"));
     }
 
     @Test
@@ -69,7 +69,7 @@ class ProductControllerTest {
         mockMvc.perform(post("/api/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
-                        new ProductRequest("Test Product", "<p>Desc</p>", new BigDecimal("29.99"), "http://img", 10))))
+                        new ProductRequest("Test Product", "A plain text description", new BigDecimal("29.99"), "http://img", 10))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Test Product"));
     }

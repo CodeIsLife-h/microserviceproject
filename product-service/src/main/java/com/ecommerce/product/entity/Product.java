@@ -16,7 +16,7 @@ public class Product {
     private String name;
 
     @Column(columnDefinition = "TEXT")
-    private String descriptionHtml;
+    private String description;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
@@ -37,8 +37,8 @@ public class Product {
     public Long getId() { return id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getDescriptionHtml() { return descriptionHtml; }
-    public void setDescriptionHtml(String descriptionHtml) { this.descriptionHtml = descriptionHtml; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
     public String getImageUrl() { return imageUrl; }

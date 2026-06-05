@@ -8,7 +8,7 @@ import { addToCart } from '@/lib/cart';
 interface Product {
   id: number;
   name: string;
-  descriptionHtml: string;
+  description: string;
   price: number;
   imageUrl: string;
   stockCount: number;
@@ -174,13 +174,12 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {product.descriptionHtml && (
+      {product.description && (
         <div className="mt-12 border-t border-border pt-8">
           <h2 className="text-xl font-semibold mb-4">Product Description</h2>
-          <div
-            className="prose max-w-none text-muted leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
-          />
+          <p className="text-muted leading-relaxed whitespace-pre-line">
+            {product.description}
+          </p>
         </div>
       )}
     </main>

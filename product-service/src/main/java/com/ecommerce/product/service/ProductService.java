@@ -41,7 +41,7 @@ public class ProductService {
     public ProductResponse createProduct(ProductRequest request) {
         Product product = new Product();
         product.setName(request.name());
-        product.setDescriptionHtml(request.descriptionHtml());
+        product.setDescription(request.description());
         product.setPrice(request.price());
         product.setImageUrl(request.imageUrl());
         product.setStockCount(request.stockCount());
