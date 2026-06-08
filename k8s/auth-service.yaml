@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z postgres-auth 5432; do echo waiting for postgres-auth; sleep 2; done"
+      containers:
+        - name: auth-service
+          image: microservicesproject-auth-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-auth:5432/authdb
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8081
+      targetPort: 8081

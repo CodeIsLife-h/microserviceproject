@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: merchant-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: merchant-service
+  template:
+    metadata:
+      labels:
+        app: merchant-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z postgres-merchant 5432; do echo waiting for postgres-merchant; sleep 2; done"
+      containers:
+        - name: merchant-service
+          image: microservicesproject-merchant-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-merchant:5432/merchantdb
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: PRODUCT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: PRODUCT_SERVICE_URL
+            - name: ORDER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: ORDER_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: merchant-service
+spec:
+  selector:
+    app: merchant-service
+  ports:
+    - port: 8085
+      targetPort: 8085

@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-order-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-order
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-order
+  template:
+    metadata:
+      labels:
+        app: postgres-order
+    spec:
+      containers:
+        - name: postgres-order
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: orderdb
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+          volumeMounts:
+            - name: order-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: order-data
+          persistentVolumeClaim:
+            claimName: postgres-order-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-order
+spec:
+  selector:
+    app: postgres-order
+  ports:
+    - port: 5432
+      targetPort: 5432

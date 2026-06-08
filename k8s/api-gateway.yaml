@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      initContainers:
+        - name: wait-for-auth
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z auth-service 8081; do echo waiting for auth-service; sleep 2; done"
+        - name: wait-for-product
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z product-service 8084; do echo waiting for product-service; sleep 2; done"
+        - name: wait-for-order
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z order-service 8082; do echo waiting for order-service; sleep 2; done"
+        - name: wait-for-notification
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z notification-service 8083; do echo waiting for notification-service; sleep 2; done"
+        - name: wait-for-merchant
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z merchant-service 8085; do echo waiting for merchant-service; sleep 2; done"
+      containers:
+        - name: api-gateway
+          image: microservicesproject-api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: AUTH_SERVICE_URL
+            - name: PRODUCT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: PRODUCT_SERVICE_URL
+            - name: ORDER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: ORDER_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: NOTIFICATION_SERVICE_URL
+            - name: MERCHANT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-urls
+                  key: MERCHANT_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: LoadBalancer
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z postgres-product 5432; do echo waiting for postgres-product; sleep 2; done"
+        - name: wait-for-redis
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z redis 6379; do echo waiting for redis; sleep 2; done"
+        - name: wait-for-rabbitmq
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "until nc -z rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done"
+      containers:
+        - name: product-service
+          image: microservicesproject-product-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8084
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-product:5432/productdb
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-config
+                  key: SPRING_RABBITMQ_HOST
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - port: 8084
+      targetPort: 8084
